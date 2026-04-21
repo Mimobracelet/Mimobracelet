@@ -583,12 +583,18 @@ footer{text-align:center;padding:3.5rem 2rem;border-top:1px solid var(--border);
   setTimeout(doPing, 2200);
   setInterval(doPing, 5800);
 
-  // Shared counter via Netlify Function + Blobs
+  // Shared counter via JSONBin.io
+  const JSONBIN_BIN_ID = '69e6fcf736566621a8d58ee7';
+  const JSONBIN_API_KEY = '$2a$10$e4O1FiGt/KxohFyziccBGu1JuqGzvuojQuGH0.1BchrEtAI6D1E2i';
+  const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
   async function fetchCount() {
     try {
-      const res = await fetch('/.netlify/functions/counter');
+      const res = await fetch(JSONBIN_URL + '/latest', {
+        headers: { 'X-Master-Key': JSONBIN_API_KEY }
+      });
       const data = await res.json();
-      return data.count || 0;
+      return data.record?.count || 0;
     } catch(e) {
       return parseInt(localStorage.getItem('mimo_local_count') || '0');
     }
@@ -596,9 +602,17 @@ footer{text-align:center;padding:3.5rem 2rem;border-top:1px solid var(--border);
 
   async function incrementCount() {
     try {
-      const res = await fetch('/.netlify/functions/counter?action=increment');
-      const data = await res.json();
-      return data.count || 0;
+      const current = await fetchCount();
+      const newCount = current + 1;
+      await fetch(JSONBIN_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_API_KEY
+        },
+        body: JSON.stringify({ count: newCount })
+      });
+      return newCount;
     } catch(e) {
       const n = parseInt(localStorage.getItem('mimo_local_count') || '0') + 1;
       localStorage.setItem('mimo_local_count', n);
