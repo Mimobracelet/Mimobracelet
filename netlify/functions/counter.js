@@ -8,7 +8,7 @@ exports.handler = async (event) => {
   };
 
   try {
-    const store = getStore('mimo-counter');
+    const store = getStore({ name: 'mimo-counter', consistency: 'strong' });
     const action = event.queryStringParameters?.action;
 
     if (action === 'increment') {
@@ -18,12 +18,11 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers, body: JSON.stringify({ count: newCount }) };
     }
 
-    // Default: get current count
     const current = await store.get('count') || '0';
     return { statusCode: 200, headers, body: JSON.stringify({ count: parseInt(current) }) };
 
   } catch (err) {
     console.error(err);
-    return { statusCode: 500, headers, body: JSON.stringify({ count: 0 }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ count: 0 }) };
   }
 };
