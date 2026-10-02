@@ -14,7 +14,7 @@ exports.handler = async (event) => {
   try {
     // Required for this function style, otherwise storage can't be reached
     connectLambda(event);
-    const store = getStore({ name: 'mimo-counter', consistency: 'strong' });
+    const store = getStore('mimo-counter');
     const added = parseInt(await store.get('added') || '0', 10);
 
     if (event.queryStringParameters?.action === 'increment') {
