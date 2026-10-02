@@ -1,8 +1,8 @@
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 
-// Unique waitlist signups from the Formspree export (Apr 21 – Sep 26, 2026).
-// The counter shows this baseline plus every new signup since.
-const BASELINE = 94;
+// 94 unique signups in the Sep 26 Formspree export + 3 signups since the redesign.
+// The counter shows this baseline plus every new signup from here on.
+const BASELINE = 97;
 
 exports.handler = async (event) => {
   const headers = {
@@ -12,18 +12,21 @@ exports.handler = async (event) => {
   };
 
   try {
+    // Required for this function style, otherwise storage can't be reached
+    connectLambda(event);
     const store = getStore({ name: 'mimo-counter', consistency: 'strong' });
-    const added = parseInt(await store.get('count') || '0');
+    const added = parseInt(await store.get('added') || '0', 10);
 
     if (event.queryStringParameters?.action === 'increment') {
       const next = added + 1;
-      await store.set('count', String(next));
+      await store.set('added', String(next));
       return { statusCode: 200, headers, body: JSON.stringify({ count: BASELINE + next }) };
     }
 
     return { statusCode: 200, headers, body: JSON.stringify({ count: BASELINE + added }) };
   } catch (err) {
-    console.error(err);
-    return { statusCode: 200, headers, body: JSON.stringify({ count: BASELINE }) };
+    console.error('Counter error:', err);
+    // Visitors still see the baseline, but the error is visible when checking the function directly
+    return { statusCode: 200, headers, body: JSON.stringify({ count: BASELINE, error: String(err && err.message || err) }) };
   }
 };
